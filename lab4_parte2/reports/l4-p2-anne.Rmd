@@ -1,8 +1,8 @@
 ---
 title: "LAB 4 - PARTE 2"
 author: "Anne Gabriele Arcanjo"
-date: "7/4/2019"
-output: slidy_presentation
+date: "7/5/2019"
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
@@ -16,7 +16,7 @@ library(gridExtra)
 library(modelr)
 ```
 
-## Sobre os dados a serem descritos
+### Sobre os dados a serem descritos
 
 Fonte dos dados:
 
@@ -26,7 +26,7 @@ Fonte dos dados:
 
 
 
-## Captura e Setup dos dados
+### Captura e Setup dos dados
 ```{r,echo=TRUE}
 index2019_hdi2017_data = read_csv(here::here("data/index2019_hdi2017_data.csv"),
                                   col_types = "cccccccccccccccccccccccccccccccccccccccc")
@@ -52,7 +52,7 @@ dados_analisados <- data_frame(
   )
 ```
 
-## Ajuste dos Dados
+### Ajuste dos Dados
 ```{r, echo=TRUE}
 dados_analisados$expectativa_vida = log(dados_analisados$expectativa_vida)
 dados_analisados$pib_per_capita = log(dados_analisados$pib_per_capita)
@@ -251,7 +251,7 @@ tidy(modelo_pib,
      conf.level = 0.95)
 glance(modelo_pib)
 ```
-## Geração de Modelos
+
 ### MODELO IDH :
 
 A determinação da *posição no rank de liberdade*, DECRESCE em 1,1e-04 o valor da VarDep IDH.
