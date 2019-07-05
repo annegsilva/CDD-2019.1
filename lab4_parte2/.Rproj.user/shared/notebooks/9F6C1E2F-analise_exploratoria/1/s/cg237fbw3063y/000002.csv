@@ -1,0 +1,13 @@
+"0","```r
+```r
+analise_insatisfacao %>% 
+  group_by(insatisfacao_exemplo) %>% 
+  summarise(med_texto = mean(tamanho_texto)) %>%
+  ggplot(aes(x = insatisfacao_exemplo, y = med_texto)) +
+  geom_point(colour=\blue\) + 
+  geom_point(data = analise_insatisfacao, aes(x = insatisfacao_exemplo, y = tamanho_texto), colour=\black\, alpha = .7) + 
+  geom_smooth(method = \lm\, color=\red\) +
+  ggtitle(\RelaÃƒÂ§ÃƒÂ£o entre a InsatisfaÃƒÂ§ÃƒÂ£o e tamanho do texto\) +
+  labs(x = \InsatisfaÃƒÂ§ÃƒÂ£o\, y = \Tamanho do texto (em palavras)\)
+```
+```"

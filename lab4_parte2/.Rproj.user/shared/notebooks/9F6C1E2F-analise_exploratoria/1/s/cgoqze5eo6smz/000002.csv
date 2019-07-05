@@ -1,0 +1,6 @@
+"0","```r
+analise_funcao$erro_modelo_1 = sqrt((analise_funcao$insatisfacao_gabarito - analise_funcao$insatisfacao_modelo_1)^2)
+analise_funcao$erro_modelo_2 = sqrt((analise_funcao$insatisfacao_gabarito - analise_funcao$insatisfacao_modelo_2)^2)
+mse_modelo_1 = mean((analise_funcao$insatisfacao_gabarito - analise_funcao$insatisfacao_modelo_1)^2)
+mse_modelo_2 = mean((analise_funcao$insatisfacao_gabarito - analise_funcao$insatisfacao_modelo_2)^2)
+```"

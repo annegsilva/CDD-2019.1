@@ -1,0 +1,13 @@
+"0","```r
+```r
+analise_insatisfacao %>% 
+  group_by(horario) %>% 
+  summarise(ins_media = mean(insatisfacao_exemplo)) %>% 
+  ggplot(mapping = aes(x = factor(horario, levels=c(\ManhÃƒÂ£\, \Tarde\, \Noite\))
+                       , y = ins_media)) +
+  geom_point(colour = \blue\) +
+  geom_point(data = analise_insatisfacao, aes(x = horario, y = insatisfacao_exemplo)) + 
+  ggtitle(\RelaÃƒÂ§ÃƒÂ£o entre o HorÃƒÂ¡rio e a InsatisfaÃƒÂ§ÃƒÂ£o\) + 
+  labs(x = \HorÃƒÂ¡rio\, y = \InsatisfaÃƒÂ§ÃƒÂ£o\)
+```
+```"

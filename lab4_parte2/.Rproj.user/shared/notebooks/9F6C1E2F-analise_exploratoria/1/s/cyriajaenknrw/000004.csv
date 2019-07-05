@@ -1,0 +1,26 @@
+"0","```r
+```r
+modelo <- lm(data = analise_insatisfacao, insatisfacao_exemplo ~ maiusculas_titulo, na.action = na.omit)
+summary(modelo)
+```
+```"
+"1","
+Call:
+lm(formula = insatisfacao_exemplo ~ maiusculas_titulo, data = analise_insatisfacao, 
+    na.action = na.omit)
+
+Residuals:
+   Min     1Q Median     3Q    Max 
+-1.728 -0.728 -0.228  0.772  2.452 
+
+Coefficients:
+                  Estimate Std. Error t value Pr(>|t|)    
+(Intercept)        2.72802    0.16389  16.646   <2e-16 ***
+maiusculas_titulo -0.09018    0.07222  -1.249    0.217    
+---
+Signif. codes:  0 Ã¢â‚¬Ëœ***Ã¢â‚¬â„¢ 0.001 Ã¢â‚¬Ëœ**Ã¢â‚¬â„¢ 0.01 Ã¢â‚¬Ëœ*Ã¢â‚¬â„¢ 0.05 Ã¢â‚¬Ëœ.Ã¢â‚¬â„¢ 0.1 Ã¢â‚¬Ëœ Ã¢â‚¬â„¢ 1
+
+Residual standard error: 1.125 on 58 degrees of freedom
+Multiple R-squared:  0.02618,	Adjusted R-squared:  0.009391 
+F-statistic: 1.559 on 1 and 58 DF,  p-value: 0.2168
+"

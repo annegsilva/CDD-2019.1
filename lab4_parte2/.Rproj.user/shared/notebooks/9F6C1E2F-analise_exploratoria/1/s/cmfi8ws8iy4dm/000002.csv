@@ -1,0 +1,10 @@
+"0","```r
+```r
+analise_insatisfacao %>% filter(maiusculas_texto < 100) %>% 
+  ggplot(mapping = aes(x = insatisfacao_exemplo, y=maiusculas_texto)) +
+  geom_point() + 
+  geom_smooth(method = \lm\) +
+  ggtitle(\RelaÃƒÂ§ÃƒÂ£o entre a InsatisfaÃƒÂ§ÃƒÂ£o e palavras em maiÃƒÂºsculo\) +
+  labs(x = \InsatisfaÃƒÂ§ÃƒÂ£o\, y = \Palavras MaiÃƒÂºsculas\)
+```
+```"

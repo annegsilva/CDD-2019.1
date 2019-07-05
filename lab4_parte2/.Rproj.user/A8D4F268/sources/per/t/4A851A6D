@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1562296393969.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3911114141",
+    "id" : "4A851A6D",
+    "lastKnownWriteTime" : 1561860144,
+    "last_content_update" : 1562322149630,
+    "path" : "C:/Users/anneg/Desktop/metodologia_cientifica/reports/analise_exploratoria.Rmd",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "30,0",
+        "scrollLine" : "0"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 5,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

@@ -1,0 +1,7 @@
+"0","```r
+modelo_2 <- lm(insatisfacao_gabarito ~ log_maiusculas_texto + log_tamanho_texto + log_exclamacoes_texto + log_exclamacoes_titulo , data = analise_funcao)
+
+tidy(modelo_2,
+     conf.int = TRUE,
+     conf.level = 0.95)
+```"

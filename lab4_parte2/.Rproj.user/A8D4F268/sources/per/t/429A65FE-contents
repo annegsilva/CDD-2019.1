@@ -1,0 +1,176 @@
+---
+title: "Implementando ICs"
+author: "Anne Gabriele Arcanjo"
+output:
+  html_document:
+    theme: readable
+    df_print: paged
+    toc: yes
+  html_notebook:
+    fig_width: 7
+    theme: readable
+    toc: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+theme_set(theme_bw())
+```
+
+## Os Dados
+
+```{r}
+lastfm = read_csv(here::here("data/experimento-lastfm.csv"), 
+                  col_types = cols(.default = col_double(), 
+                                   user = col_character()))
+set.seed(1305)
+
+lastfm = lastfm %>% 
+  sample_n(300) %>% 
+  select(news, old, mediana_pop)
+```
+
+## Proporção de artistas novos e popularidade
+
+Utilizaremos ICs para estimar duas métricas sobre os usuários do LastFM em geral durante um período de 6 meses. Em ambos os casos faremos isso a partir de uma amostra de 300 usuários. As duas métricas são: 
+
+1. Qual a proporção de novos artistas escutados pelos usuários
+2. Para os usuários que gostam de música muito pop (mediana_pop > 5), qual a correlação entre a popularidade mediana dos artistas escutado e a proporção dos artistas escutados que eram novos. 
+
+### 1. Média da Proporção de Artistas Novos na Amostra (Manual)
+
+```{r}
+lastfm$news_prop = (lastfm$news) /(lastfm$news + lastfm$old)
+media_prop = mean(lastfm$news_prop)
+media_prop
+
+```
+#### Conclusão
+##### Artistas Novos
+
+Em média, os usuários da amostra possuem 24% dos artistas ouvidos como artistas novos em suas playlists.
+
+### 2. Usuários que gostam de Música Pop
+```{r}
+pop_user = lastfm %>%
+    filter(mediana_pop > 5)
+
+
+no_pop_user = lastfm %>%
+    filter(mediana_pop < 5)
+
+```
+
+#### Correlação entre a Popularidade dos Artistas pela Proporção de Novos Artistas
+```{r}
+plot_cor_pop_new = lastfm %>%
+    ggplot(aes(
+        x = (mediana_pop)/10,
+        y = news_prop
+    )) +
+    geom_point(alpha =0.5, color = 3, size = 3)+
+    labs(title = "Popularidade dos Artistas \npela Proporção de Novos Artistas por Usuário", x = "Mediana Popularidade", y="Proporção de Novos Artistas")
+
+```
+
+#### Correlação para Usuários de Música Pop
+```{r}
+plot_cor_popuser_new = pop_user %>%
+    ggplot(aes(
+        x = (mediana_pop)/10,
+        y = news_prop
+    )) +
+    geom_point(alpha =0.5, color = 3, size = 3)+
+    labs(title = "Popularidade dos Artistas \npela Proporção de Novos Artistas por Usuário de Música Pop", x = "Mediana Popularidade", y="Proporção de Novos Artistas")
+
+media_prop_popuser = mean(pop_user$news_prop)
+media_prop_popuser
+
+cor_popuser_new = cor(pop_user$news_prop, pop_user$mediana_pop)
+cor_popuser_new
+```
+
+#### Correlação para Outros Usuários (mediana_pop < 5)
+```{r}
+plot_cor_no_popuser_new = no_pop_user %>%
+    ggplot(aes(
+        x = (mediana_pop)/10,
+        y = news_prop
+    )) +
+    geom_point(alpha =0.5, color = 3, size = 3)+
+    labs(title = "Popularidade dos Artistas \npela Proporção de Novos Artistas por Usuário com mediana_pop < 5", x = "Mediana Popularidade", y="Proporção de Novos Artistas")
+
+media_prop_no_popuser = mean(no_pop_user$news_prop)
+media_prop_no_popuser
+
+cor_no_popuser_new = cor(no_pop_user$news_prop, no_pop_user$mediana_pop)
+cor_no_popuser_new
+```
+
+#### Plots
+```{r}
+plot_cor_pop_new
+plot_cor_popuser_new
+plot_cor_no_popuser_new
+```
+
+#### Conclusão
+##### Artistas Novos
+
+Em média, os usuários de música Pop da amostra possuem uma associação **positiva** e **média** (N=270, cor linear=0.47, prop_new=0.24).
+A partir desta amostra, estimamos que os usuários de música pop tem uma tendencia maior do que os outros usuários (N=30, cor linear=0.14, média = 0.22) a descobrirem novos artistas, com uma associação **positiva** e **fraca**. 
+
+
+### Aplicando o Bootstrapping
+```{r}
+funcao_theta = function(df) {
+  df %>%
+    pull(news_prop) %>%
+    mean()
+}
+
+theta_news_c = funcao_theta(lastfm)
+```
+
+```{r}
+repeticoes = 4000 # pelo menos 2000, mas mais não faz mal.
+
+um_bootstrap <- function(x){
+  news = x %>% pull(news_prop)
+  boot_x <- sample(news,           # amostre dos dados
+                   size = NROW(x), # tamanho igual ao recebido
+                   replace = TRUE) # aqui é o bootstrap
+  return(mean(boot_x))
+}
+
+set.seed(1305)
+
+# A REAMOSTRAGEM
+reamostragem_lastfm = tibble(i = 1:repeticoes) %>% 
+  mutate(theta_c_s = map_dbl(i, ~ um_bootstrap(lastfm)))
+
+reamostragem_lastfm
+```
+
+### Calculando o IC
+
+Agora usamos a distribuição de $\delta* = \hat{\theta}* - \hat{\theta}$ no lugar da de $\delta$.
+
+```{r}
+intervalo = reamostragem_lastfm %>% 
+  mutate(erro = theta_c_s - theta_news_c) %>% 
+  summarise(erro_i = quantile(erro, .05), 
+            erro_s = quantile(erro, .95))
+
+intervalo
+```
+
+```{r}
+intervalo = intervalo %>% 
+  mutate(valor_i = theta_news_c + erro_i, 
+         valor_s = theta_news_c + erro_s)
+
+intervalo
+```

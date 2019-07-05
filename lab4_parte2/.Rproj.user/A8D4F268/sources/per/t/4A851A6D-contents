@@ -1,0 +1,359 @@
+---
+title: "Análise de Dados Exploratória"
+author:
+  - Anne Gabriele
+  - Gabriel Almeida
+  - Júlio Guedes
+  - Vinicius Jorge
+output: 
+  html_document:
+    theme: readable
+    df_print: paged
+    toc: yes
+    fig_width: 12
+  html_notebook:
+    fig_width: 12
+    theme: readable
+    toc: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(tidytext)
+library(here)
+library(dplyr)
+library(ggplot2)
+library(ggbeeswarm)
+library(scales)
+library(gridExtra)
+library(lexiconPT)
+```
+
+## Import dos dados
+
+Para esta análise, temos um conjunto de dados que está separado em três arquivos:
+
+* avaliacoes20190515.csv: Se refere às gradações de insatisfação manuais feitas por nós, alunos, de algumas das reclamações feitas contra à ANATEL e a ANS, onde existem:
+  
+    * Matricula do aluno que avaliou
+    * ID da reclamação
+    * Grau de insatisfação dado pelo aluno
+
+* reclamacoes-avaliadas-20190515.csv: Se refere a um conjunto de dados exemplo, onde existem:
+
+    * ID da reclamação
+    * Órgão alvo da reclamação
+    * Data da Reclamação
+    * Título da Reclamação
+    * Texto da Reclamação
+    * Link para a reclamação
+    * Grupo que avaliará a reclamação
+    * Grau de Insatisfação
+    * Número de alunos avaliadores
+    * Amplitude das avaliações (maior grau de insatisfação - menor grau de insatisfação)
+    
+
+Importaremos, então, esses dados para a nossa análise:
+
+```{r read, include=FALSE}
+avaliacoes = read_csv(
+    here::here("data/avaliacoes20190515.csv"),
+    col_types = "ddd")
+
+reclamacoes_avaliadas = read_csv(
+    here::here("data/reclamacoes-avaliadas-20190515.csv"),
+    col_types = "dcccccdddd")
+
+funcoes_modelo = read_csv(
+  here::here("data/sentimento.csv"),
+  col_types = "dddddd"
+)
+```
+
+Tendo os dados em mãos, agora é possível modificá-los de forma que possam ajudar mais na nossa análise. Inicialmente, queremos entender a diferença entre escolher a média ou a mediana das avaliações dadas pelos alunos como medida para o grau de insatisfação de uma reclamação. Antes de visualizar uma das duas, vejamos como as avaliações dadas pelos alunos se distribuem nas reclamações:
+
+```{r, echo=FALSE, fig.width=12}
+avaliacoes %>%
+    ggplot(mapping = aes(x = `ID da reclamação`, y = `Grau de insatisfação`, group = `ID da reclamação`)) +
+    geom_boxplot(outlier.shape = NA) +
+    geom_jitter(colour = "darkorchid", alpha = .4) + 
+    labs(title = "Distribuição das avaliações",
+         x = "ID da Reclamação", y = "Grau de insatisfação") +
+    scale_y_continuous(breaks = c(1, 2, 3, 4, 5, 6))
+```
+
+## Media vs. Mediana
+
+Nosso primeiro questionamento é sobre qual medida central, média ou mediana, é mais apto para agrupar os dados. Vejamos:
+
+```{r, echo=FALSE}
+analise_insatisfacao <- avaliacoes %>%
+    group_by(`ID da reclamação`) %>%
+  summarise(media = mean(`Grau de insatisfação`),
+            mediana = median(`Grau de insatisfação`)) %>% 
+  mutate(divergencia = abs(media - mediana), 
+         insatisfacao_exemplo = reclamacoes_avaliadas$insatisfacao)
+
+```
+
+```{r, echo=FALSE}
+plot_media = analise_insatisfacao %>%
+    ggplot(aes(x = "", y = media)) +
+    geom_dotplot(binaxis = "y", stackdir = "center") +
+    labs(title = "Distribuição da Média", x = "Média", y = "Grau de Insatisfação")
+```
+
+```{r, echo=FALSE}
+plot_mediana = analise_insatisfacao %>%
+    ggplot(aes(x = "", y = mediana)) +
+    geom_dotplot(binaxis = "y", stackdir = "center") +
+    labs(title = "Distribuição da Mediana", x = "Mediana", y = "Grau de Insatisfação")
+```
+
+```{r, echo=FALSE}
+plot_mediana_floor = analise_insatisfacao %>%
+    ggplot(aes(x = "", y = floor(mediana))) +
+    geom_dotplot(binaxis = "y", stackdir = "center") +
+    labs(title = "Distribuição da Mediana", x = "Mediana Discretizada", y = "Grau de Insatisfação")
+```
+
+```{r, echo=FALSE}
+plot_insatisfacao_calc = analise_insatisfacao %>%
+    ggplot(aes(x = "", y = insatisfacao_exemplo)) +
+    geom_dotplot(binaxis = "y", stackdir = "center") +
+    labs(title = "Distribuição da Insatisfação Calculada",
+         x = "Insatisfação Referência", y = "Grau de Insatisfação")
+```
+
+```{r, message=FALSE, echo = FALSE}
+grid.arrange(plot_media, plot_mediana, plot_mediana_floor, ncol=3)
+```
+
+Observando as distribuições acima, a Mediana parece ser idêntica a referência que temos da tabela. Entretanto, é também válido observarmos a divergência entre média e mediana, com ênfase à média da divergência (em vermelho):
+
+```{r, echo=FALSE, message = FALSE}
+analise_insatisfacao %>% 
+    ggplot(mapping = aes(x = "", y = divergencia)) + 
+    geom_dotplot(binaxis = "y", stackdir = "center") +
+    geom_point(mapping = aes(y = mean(divergencia)), colour = "red", size = 3) +
+    labs(title = "Divergência entre Média e Mediana", x = "", y = "Divergência")
+```
+
+Escolheremos então a Mediana, por estar menos distante da referência de insatisfação, mas também por ser menos afetada por outliers, que não estão em tão pequena quantidade, mas que ainda assim podem afetar a Média.
+
+## Analisando as reclamações individuais
+
+Podemos ver no gráfico de distribuição, a reclamação de ID 51 possui uma das avaliações com nível de insatisfação 6, que é acima do permitido. Entretanto, é necessário modificar ou remover esse dado para que se adeque aos limites corretos, e para isso temos algumas opções de tratamento:
+
+1. Remover a avaliação, desconsiderando-a totalmente em nossa análise;
+2. Modificar todas as outras avaliações de modo que: a avaliação que recebeu nota 6 passe a ter nota 5 e todas as que possuem nota 5 ou inferior sejam decrementadas na mesma proporção que a nota 6 foi decrementada;
+3. Modificar a avaliação 6 para que se torne uma nota 5, sem efeitos colaterais.
+
+Passamos então a observar o impacto que tais mudanças fariam nos nossos dados: a primeira opção é a mais simples, entretanto, descartar dados quase nunca é uma boa escolha; a segunda opção é a que nos traria mais trabalho, já que ela modificaria todas as avaliações dadas pelos alunos, e isso poderia causar o efeito colateral de afastar todas da referência que possuímos; por fim, a terceira é a segunda mais simples, e parece ser justa, já que nem modifica o conjunto de dados inteiro, nem descarta dados, embora tenha o efeito colateral de reduzir o impacto da nota original da avaliação.
+
+Optamos assim por aplicar a terceira opção de tratamento:
+
+```{r}
+avaliacoes <- avaliacoes %>%
+    mutate(`Grau de insatisfação` = if_else(`Grau de insatisfação` > 5, 5, `Grau de insatisfação`))
+
+avaliacoes %>% filter(`ID da reclamação` == 51)
+```
+
+## Perguntas elaboradas sobre os dados
+
+As respostas representam a descrição dos possíveis indicadores, sem uso de nenhum cálculo de correlação ou de regressões, sobre o grau de insatisfação que será comparado com a insatisfação gerada pela mediana.
+
+Para responder as perguntas, geramos mais dados a partir dos scripts em `code/`, e precisaremos trazer os dados gerados para a nossa análise:
+
+```{r}
+mais_dados <- read_csv(here::here("data/mais_features.csv"), col_types="dddddddc")
+analise_insatisfacao <- analise_insatisfacao %>%  left_join(mais_dados, by=c("ID da reclamação" = "id"))
+glimpse(analise_insatisfacao)
+```
+
+### 1. Textos com letras em capslock tendem a ter um grau mais forte de insatisfação?
+
+Para o espaço amostral utilizado percebe-se que quando um texto apresenta palavras em caixa alta essa reclamação obtém uma mediana próxima do valor 3, nem tão baixa, nem muito alta, visto que foi adotado como escala de insatisfação valores de 1 a 5. Cabe posteriormente, uma análise mais detalhada da correlação entre o grau de insatisfação e a quantidade de letras/palavras em caixa alta.
+
+```{r}
+analise_insatisfacao %>%
+  ggplot(mapping = aes(x = insatisfacao_exemplo, y = maiusculas_texto)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  ggtitle("Relação entre a Insatisfação e palavras em maiúsculo") +
+  labs(x = "Insatisfação", y = "Palavras Maiúsculas")
+
+modelo <- lm(data = analise_insatisfacao, insatisfacao_exemplo ~ maiusculas_texto, na.action = na.omit)
+summary(modelo)
+```
+
+Logo de cara, é possível notar que há um outlier que prejudica nossa visualização. Quando analisamos a correlação entre as variáveis, obtemos o valor `r cor(analise_insatisfacao$insatisfacao_exemplo, analise_insatisfacao$maiusculas_texto + analise_insatisfacao$maiusculas_titulo)`, mostrando que não há correlação.
+
+Vejamos, ainda assim, se, ao remover esse outlier, é possível ver algum formato nos dados:
+
+```{r}
+analise_insatisfacao %>% filter(maiusculas_texto < 100) %>% 
+  ggplot(mapping = aes(x = insatisfacao_exemplo, y=maiusculas_texto)) +
+  geom_point() + 
+  geom_smooth(method = "lm") +
+  ggtitle("Relação entre a Insatisfação e palavras em maiúsculo") +
+  labs(x = "Insatisfação", y = "Palavras Maiúsculas")
+
+modelo <- lm(data = analise_insatisfacao %>% filter(maiusculas_texto < 100), insatisfacao_exemplo ~ maiusculas_texto, na.action = na.omit)
+summary(modelo)
+```
+
+Pelo gráfico acima, ainda é possível perceber que não há um formato bem definido. Esse fato, unido a análise da correlação que vimos anteriormente, nos mostra que não há uma relação visível entre a quantidade de palavras maiúsculas e a insatisfação da reclamação.
+
+### 2. O tamanho do texto (quantidade de caracteres) está relacionado ao grau de insatisfação?
+
+Fazendo uma análise visual é possível levantar a hipótese de uma correlação linear positiva, mesmo que fraca, entre quantidade de palavras e grau de insatisfação.
+
+```{r}
+analise_insatisfacao %>% 
+  group_by(insatisfacao_exemplo) %>% 
+  summarise(med_texto = mean(tamanho_texto)) %>%
+  ggplot(aes(x = insatisfacao_exemplo, y = med_texto)) +
+  geom_point(colour="blue") + 
+  geom_point(data = analise_insatisfacao, aes(x = insatisfacao_exemplo, y = tamanho_texto), colour="black", alpha = .7) + 
+  geom_smooth(method = "lm", color="red") +
+  ggtitle("Relação entre a Insatisfação e tamanho do texto") +
+  labs(x = "Insatisfação", y = "Tamanho do texto (em palavras)")
+```
+
+### 3. O uso de advérbios de intensidade resulta em um grau de insatisfação maior?
+
+Dentre as reclamações analisadas, grande parte dos termos utilizados pelos usuários contém advérbios de intensidade como: muito, extremamente, etc. Assim, por meio da construção de um banco de advérbios de intensidade, será realizado um parser na reclamação em busca dos termos desse tipo, para realizar uma contagem de aparições dos mesmos. O número pode ser utilizado como peso para o cálculo da insatisfação final.
+
+
+### 4. Existe relação entre o número de sinais de pontuação presentes na reclamação e o grau de insatisfação?
+
+O número de sinais de pontuações dentro de uma reclamação (como exclamação e interrogação) também podem indicar o quão insatisfeito está o usuário, dado que o uso desses sinais expressam algum sentimento do falante diante de algo.
+
+```{r}
+analise_insatisfacao %>% 
+  ggplot(mapping = aes(x = insatisfacao_exemplo, y = exclamacoes_texto)) +
+  geom_point() + 
+  ggtitle("Relação entre a Insatisfação e uso de exclamações") +
+  labs(x = "Insatisfação", y = "Quantidade de Exclamações")
+```
+
+### 5. O título da reclamação reforça a insatisfação?
+
+Avaliar o título consiste basicamente em analisar seu tamanho, quantidade de de letras em caixa alta e o número de exclamações. Quanto a esses três fatores nota-se que a mediana tende a assumir valores maiores quando o título possui exclamações porém aparentemente não existem indícios suficientes que indicam que o número de palavras em caixa alta e o tamanho do título sejam relevantes para representar/justificar o grau de insatisfação.
+
+```{r}
+analise_insatisfacao %>%
+  ggplot(mapping = aes(x = insatisfacao_exemplo, y = maiusculas_titulo)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  ggtitle("Relação entre a Insatisfação e palavras em maiúsculo no Título") +
+  labs(x = "Insatisfação", y = "Palavras Maiúsculas")
+
+modelo <- lm(data = analise_insatisfacao, insatisfacao_exemplo ~ maiusculas_titulo, na.action = na.omit)
+summary(modelo)
+```
+
+```{r}
+analise_insatisfacao %>% 
+  group_by(insatisfacao_exemplo) %>% 
+  summarise(med_texto = mean(tamanho_titulo)) %>%
+  ggplot(aes(x = insatisfacao_exemplo, y = med_texto)) +
+  geom_point(colour="blue") + 
+  geom_point(data = analise_insatisfacao, aes(x = insatisfacao_exemplo, y = tamanho_titulo), colour="black", alpha = .7) + 
+  geom_smooth(method = "lm", color="red") +
+  ggtitle("Relação entre a Insatisfação e tamanho do Título") +
+  labs(x = "Insatisfação", y = "Tamanho do titulo (em palavras)")
+
+modelo <- lm(data = analise_insatisfacao, insatisfacao_exemplo ~ tamanho_titulo, na.action = na.omit)
+summary(modelo)
+```
+
+
+
+### 6. Existe relação do grau de insatisfação com o horário em que foi feita a reclamação?
+
+Sabendo que é comum as pessoas resolverem tarefas pendentes em momentos específicos do dia, a hora em que a reclamação foi feita podem ser um índice da insatisfação, dado que certos horários são característicos para a resolução de tarefas exaustivas ou estressantes. 
+
+```{r}
+analise_insatisfacao %>% 
+  group_by(horario) %>% 
+  summarise(ins_media = mean(insatisfacao_exemplo)) %>% 
+  ggplot(mapping = aes(x = factor(horario, levels=c("Manhã", "Tarde", "Noite"))
+                       , y = ins_media)) +
+  geom_point(colour = "blue") +
+  geom_point(data = analise_insatisfacao, aes(x = horario, y = insatisfacao_exemplo)) + 
+  ggtitle("Relação entre o Horário e a Insatisfação") + 
+  labs(x = "Horário", y = "Insatisfação")
+  
+```
+## Regressão Múltipla: geração da função para grau de insatisfação
+```{r}
+analise_funcao = analise_insatisfacao %>%
+  transmute(log_maiusculas_texto = log(maiusculas_texto + 1),
+         log_tamanho_texto = log(tamanho_texto),
+         log_exclamacoes_texto = log(exclamacoes_texto + 1),
+         log_maiusculas_titulo = log(maiusculas_titulo + 1),
+         log_tamanho_titulo = log(tamanho_titulo),
+         log_exclamacoes_titulo = log(analise_insatisfacao$exclamacoes_titulo + 1),
+         insatisfacao_gabarito = floor(mediana),
+          insatisfacao_modelo_1 = signif(2.38 + (log_maiusculas_texto * 0.25) + (log_tamanho_texto * 0.05) + (log_exclamacoes_texto * 0.49) +(log_maiusculas_titulo*-0.12) + (log_tamanho_titulo*-.22)+ (log_exclamacoes_titulo * 0.47), digits = 1),
+         insatisfacao_modelo_2 = signif(1.28 + (log_maiusculas_texto * 0.22) + (log_tamanho_texto * 0.11) + (log_exclamacoes_texto * 0.45) + (log_exclamacoes_titulo * 0.47), digits = 1))
+```
+
+### Modelo 1
+```{r}
+modelo_1 <- lm(insatisfacao_gabarito ~ log_maiusculas_texto + log_tamanho_texto + log_exclamacoes_texto + log_maiusculas_titulo + log_tamanho_titulo + log_exclamacoes_titulo , data = analise_funcao)
+
+tidy(modelo_1,
+     conf.int = TRUE,
+     conf.level = 0.95)
+glance(modelo_1)
+```
+
+### Modelo 2: Retirando tamanho titulo e mauisculas
+```{r}
+modelo_2 <- lm(insatisfacao_gabarito ~ log_maiusculas_texto + log_tamanho_texto + log_exclamacoes_texto + log_exclamacoes_titulo , data = analise_funcao)
+
+tidy(modelo_2,
+     conf.int = TRUE,
+     conf.level = 0.95)
+glance(modelo_2)
+```
+
+## Estamição do grau de insatisfação pela função
+```{r}
+analise_funcao$erro_modelo_1 = sqrt((analise_funcao$insatisfacao_gabarito - analise_funcao$insatisfacao_modelo_1)^2)
+analise_funcao$erro_modelo_2 = sqrt((analise_funcao$insatisfacao_gabarito - analise_funcao$insatisfacao_modelo_2)^2)
+mse_modelo_1 = mean((analise_funcao$insatisfacao_gabarito - analise_funcao$insatisfacao_modelo_1)^2)
+mse_modelo_2 = mean((analise_funcao$insatisfacao_gabarito - analise_funcao$insatisfacao_modelo_2)^2)
+```
+
+```{r, echo=FALSE}
+plot_gabarito = analise_funcao %>%
+    ggplot(aes(x = "", y = insatisfacao_gabarito)) +
+    geom_dotplot(binaxis = "y", stackdir = "center",dotsize = .8) +
+    labs(title = "Insatisfação Gabarito", x = "", y = "Grau de Insatisfação")
+```
+
+```{r, echo=FALSE}
+plot_modelo = analise_funcao %>%
+    ggplot(aes(x = "", y = insatisfacao_modelo_2)) +
+    geom_dotplot(binaxis = "y", stackdir = "center",dotsize = .8) +
+    labs(title = "Insatisfação Modelo", x = "", y = "Grau de Insatisfação")
+```
+
+```{r, message=FALSE, echo = FALSE}
+acertos = analise_funcao %>%
+    filter(erro_modelo_2 == 0)
+```
+### Média de Acertos
+```{r, message=FALSE, echo = FALSE}
+
+```
+
+

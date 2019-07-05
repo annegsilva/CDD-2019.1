@@ -1,0 +1,9 @@
+"0","```r
+```r
+analise_insatisfacao %>% 
+  ggplot(mapping = aes(x = insatisfacao_exemplo, y = exclamacoes_texto)) +
+  geom_point() + 
+  ggtitle(\RelaÃƒÂ§ÃƒÂ£o entre a InsatisfaÃƒÂ§ÃƒÂ£o e uso de exclamaÃƒÂ§ÃƒÂµes\) +
+  labs(x = \InsatisfaÃƒÂ§ÃƒÂ£o\, y = \Quantidade de ExclamaÃƒÂ§ÃƒÂµes\)
+```
+```"

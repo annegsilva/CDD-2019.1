@@ -1,0 +1,27 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1562270129546.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "423061699",
+    "id" : "B017DEB7",
+    "lastKnownWriteTime" : 1562322335,
+    "last_content_update" : 1562322335713,
+    "path" : "C:/Users/anneg/Desktop/lab4_parte2/l4p2-anne.Rmd",
+    "project_path" : "l4p2-anne.Rmd",
+    "properties" : {
+        "cursorPosition" : "222,15",
+        "last_setup_crc32" : "7AF347656d31bfc1",
+        "scrollLine" : "191",
+        "tempName" : "Untitled1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}
