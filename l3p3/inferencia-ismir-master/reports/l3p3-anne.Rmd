@@ -1,0 +1,87 @@
+---
+title: "L3P3"
+author: "Anne Gabriele Arcanjo"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+theme_set(theme_bw())
+
+library(boot)
+library(broom)
+
+knitr::opts_chunk$set(tidy = FALSE,
+                      fig.width = 6,
+                      fig.height = 5)
+
+```
+
+```{r read}
+dados = read_csv(here::here("data/satisfacoes.csv"), 
+                 col_types = "cdcc") 
+
+glimpse(dados)
+```
+
+### Comparação dos mecanismos: Baseline vs. Up/Down Voting
+```{r}
+comparacao_baseline_updownvoting = dados %>% 
+    filter(scenario %in% c("baseline", "up/downvoting"))
+
+theta <- function(d, i) {
+    agrupado = d %>% 
+        slice(i) %>% 
+        group_by(scenario) %>% 
+        summarise(media = mean(satisfaction))
+    b = agrupado %>% filter(scenario == "baseline") %>% pull(media)
+    l = agrupado %>% filter(scenario == "up/downvoting") %>% pull(media)
+    l - b
+}
+
+theta(comparacao_baseline_updownvoting, i = 1:NROW(comparacao_baseline_updownvoting))
+```
+
+```{r}
+comparacao1 = boot(data = comparacao_baseline_updownvoting,
+           statistic = theta,
+           R = 2000) %>%
+    tidy(conf.level = .95,
+         conf.method = "bca",
+         conf.int = TRUE)
+
+comparacao1
+```
+### Comparação dos mecanismos: Baseline vs. Combined
+
+```{r}
+comparacao_baseline_combined = dados %>% 
+    filter(scenario %in% c("baseline", "combined"))
+
+theta <- function(d, i) {
+    agrupado = d %>% 
+        slice(i) %>% 
+        group_by(scenario) %>% 
+        summarise(media = mean(satisfaction))
+    b = agrupado %>% filter(scenario == "baseline") %>% pull(media)
+    l = agrupado %>% filter(scenario == "combined") %>% pull(media)
+    l - b
+}
+
+theta(comparacao_baseline_combined, i = 1:NROW(comparacao_baseline_combined))
+```
+
+```{r}
+comparacao2 = boot(data = comparacao_baseline_combined,
+           statistic = theta,
+           R = 2000) %>%
+    tidy(conf.level = .95,
+         conf.method = "bca",
+         conf.int = TRUE)
+
+comparacao2
+```
