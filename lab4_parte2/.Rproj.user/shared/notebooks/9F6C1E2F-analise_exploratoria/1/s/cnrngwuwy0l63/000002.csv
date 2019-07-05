@@ -1,7 +1,0 @@
-"0","```r
-```r
-avaliacoes <- avaliacoes %>%
-    mutate(`Grau de insatisfaÃƒÂ§ÃƒÂ£o` = if_else(`Grau de insatisfaÃƒÂ§ÃƒÂ£o` > 5, 5, `Grau de insatisfaÃƒÂ§ÃƒÂ£o`))
-avaliacoes %>% filter(`ID da reclamaÃƒÂ§ÃƒÂ£o` == 51)
-```
-```"

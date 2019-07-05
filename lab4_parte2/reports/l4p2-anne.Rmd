@@ -13,6 +13,7 @@ library(ggfortify)
 library(broom)
 library(vroom)
 library(gridExtra)
+library(modelr)
 ```
 
 ## Sobre os dados a serem descritos
@@ -22,7 +23,7 @@ Fonte dos dados:
 - Indice de Liberdade https://www.heritage.org/index/excel/2019/index2019_data.xls (2019)
 
 
-## Captura dos dados
+## Captura e Setup dos dados
 ```{r}
 index2019_hdi2017_data = read_csv(here::here("data/index2019_hdi2017_data.csv"),
                                   col_types = "cccccccccccccccccccccccccccccccccccccccc")
@@ -47,26 +48,32 @@ dados_analisados <- data_frame(
   expectativa_media_estudos = as.double(dados_selecionados$mean_years_schooling)
   )
 ```
-## Ajuste dos Dads
-```{r}
+
+## Ajuste dos Dados
+```{r, include=TRUE}
+dados_analisados$expectativa_vida = log(dados_analisados$expectativa_vida)
 dados_analisados$pib_per_capita = log(dados_analisados$pib_per_capita)
+dados_analisados = dados_analisados %>% 
+  filter(liberdade_monetaria > 0)
 ```
 
 ## Visualizações - RANK DE LIBERADE
 
+### PIB per Capita dado a Posição no Rank Mundial de Liberdade
 ```{r}
-liberdade_pib = dados_analisados %>% 
+dados_analisados %>% 
     ggplot(aes(x = rank_liberdade, y = pib_per_capita )) +
-    labs(title = "Classificação em Liberdade Econômica dado o GDP per Capita ", x = "Posição no Rank de Liberdade", y = "PIB per capita ") +
-    geom_count(alpha = .5)
+    labs(title = "GDP per Capita dada a Classificação em Liberdade Econômica", x = "Posição no Rank de Liberdade", y = "PIB per capita ") +
+    geom_point(alpha = .5, size = 3) + 
+    scale_y_log10()
+```
 
-liberdade_idh = dados_analisados %>% 
+### IDH dado a Posição no Rank Mundial de Liberdade
+```{r}
+dados_analisados %>% 
     ggplot(aes(x = rank_liberdade, y = idh )) +
-    labs(title = "Classificação em Liberdade Econômica dado o IDH ", x = "Posição no Rank de Liberdade", y = "IDH") +
-    geom_count(alpha = .5)
-
-grid.arrange(liberdade_pib, liberdade_idh, ncol=2)
-
+    labs(title = "IDH dada a Classificação em Liberdade Econômica ", x = "Posição no Rank de Liberdade", y = "IDH") +
+    geom_point(alpha = .5, size = 3)
 ```
 
 ## Business Freedom
@@ -89,20 +96,21 @@ Para mais detalhes sobre a formulação dos dados:
 https://www.heritage.org/index/business-freedom
 
 ## Visualizações - LIBERDADE PARA EMPREENDER
+### PIB per Capita dado a Liberdade para Empreender
 
 ```{r}
-mercado_pib = dados_analisados %>% 
+dados_analisados %>% 
     ggplot(aes(x = liberdade_empreender, y = pib_per_capita )) +
-    labs(title = "GDP per Capita dado a Liberdade para Empreender", x = "Liberdade de Mercado (%)", y = "PIB per capita ") +
-    geom_count(alpha = .5)
+    labs(title = "PIB per capita dada a Liberdade para Empreender", x = "Liberdade de Mercado (%)", y = "PIB per capita ") +
+    geom_point(alpha = .5, size = 3)
+```
 
-mercado_idh = dados_analisados %>% 
+### IDH dado a Liberdade para Empreender
+```{r}
+dados_analisados %>% 
     ggplot(aes(x = liberdade_empreender, y = idh )) +
     labs(title = "IDH dado a Liberdade para Empreender", x = "Liberdade de Mercado (%)", y = "IDH") +
-    geom_count(alpha = .5)
-
-grid.arrange(mercado_pib, mercado_idh, ncol=2)
-
+    geom_point(alpha = .5, size = 3)
 ```
 
 ## Labor Freedom
@@ -124,19 +132,21 @@ https://www.heritage.org/index/labor-freedom
 
 ## Visualizações - LIBERDADE DE TRABALHO
 
-### GDP per Capita e IDH dado a Liberdade de Trabalho
+### GDP per Capita dado a Liberdade de Trabalho
 ```{r}
-trabalho_pib = dados_analisados %>% 
+dados_analisados %>% 
     ggplot(aes(x = liberdade_trabalho, y = pib_per_capita )) +
-    labs(x = "Liberdade de Trabalho (%)", y = "PIB per capita ") +
-    geom_count(alpha = .5)
+    labs(title = "PIB per capita dada a Liberdade de Trabalho", x = "Liberdade de Trabalho (%)", y = "PIB per capita ") +
+    geom_point(alpha = .5, size = 3)
+```
 
-trabalho_idh = dados_analisados %>% 
+### IDH dado a Liberdade de Trabalho
+```{r}
+dados_analisados %>% 
     ggplot(aes(x = liberdade_trabalho, y = idh )) +
-    labs(x = "Liberdade de Trabalho (%)", y = "IDH") +
-    geom_count(alpha = .5)
+    labs(title = "IDH dado a Liberdade para Trabalho", x = "Liberdade de Trabalho (%)", y = "IDH") +
+    geom_point(alpha = .5, size = 3)
 
-grid.arrange(trabalho_pib, trabalho_idh, ncol=2)
 ```
 
 ## Monetary Freedom
@@ -155,56 +165,65 @@ https://www.heritage.org/index/monetary-freedom
 
 ## Visualizações - LIBERDADE MONETÁRIA
 
-### GDP per Capita e IDH dado a Liberdade Monetária
+### GDP per Capita dado a Liberdade Monetária
 
 ```{r}
-monetaria_pib = dados_analisados %>% 
-    ggplot(aes(x = liberdade_monetaria, y = pib_per_capita )) +
-    labs(x = "Liberdade de Monetária (%)", y = "PIB per capita ") +
-    geom_count(alpha = .5)
+dados_analisados %>% 
+  filter(liberdade_monetaria > 0) %>% 
+    ggplot(aes(x = liberdade_monetaria, y = log10(pib_per_capita))) +
+    labs(title = "PIB per capita dada a Liberdade Monetária", x = "Liberdade de Monetária (%)", y = "PIB per capita ") +
+    geom_point(alpha = .5, size = 3)
 
-monetaria_idh = dados_analisados %>% 
+```
+
+### IDH dado a Liberdade Monetária
+```{r}
+dados_analisados %>%
+  filter(liberdade_monetaria > 0) %>% 
     ggplot(aes(x = liberdade_monetaria, y = idh )) +
-    labs(x = "Liberdade de Monetária (%)", y = "IDH") +
-    geom_count(alpha = .5)
-
-grid.arrange(monetaria_pib, monetaria_idh, ncol=2)
+    labs(title = "IDH dado a Liberdade para Monetária",x = "Liberdade de Monetária (%)", y = "IDH") +
+    geom_point(alpha = .5, size = 3)
 ```
 
 ## Visualizações - EXPECTATIVA MÉDIA DE ANOS DE ESTUDO
 
-### GDP per Capita e IDH dado a Expectativa Média de Anos de Estudo
+### GDP per Capita dado a Expectativa Média de Anos de Estudo
 
 ```{r}
-estudo_pib = dados_analisados %>% 
+dados_analisados %>% 
     ggplot(aes(x = expectativa_media_estudos, y = pib_per_capita )) +
-    labs(x = "Anos de Estudo (média)", y = "PIB per capita ") +
-    geom_count(alpha = .5)
+    labs(title = "PIB per capito dado a Número Médio de Anos de Estudo", x = "Anos de Estudo (média)", y = "PIB per capita ") +
+    geom_point(alpha = .5, size = 3)
+```
 
-estudo_idh = dados_analisados %>% 
+### IDH dado a Expectativa Média de Anos de Estudo
+
+```{r}
+dados_analisados %>% 
     ggplot(aes(x = expectativa_media_estudos, y = idh )) +
-    labs(x = "Anos de Estudo (média)", y = "IDH") +
-    geom_count(alpha = .5)
-
-grid.arrange(estudo_pib, estudo_idh, ncol=2)
+    labs(title = "IDH dado a Número Médio de Anos de Estudo", x = "Anos de Estudo (média)", y = "IDH") +
+    geom_point(alpha = .5, size = 3)
 ```
 
 ## Visualizações - EXPECTATIVA VIDA
 
-### GDP per Capita e IDH dado a Expectativa de Vida
+### GDP per Capita dado a Expectativa de Vida
 
 ```{r}
 vida_pib = dados_analisados %>% 
     ggplot(aes(x = expectativa_vida, y = pib_per_capita )) +
-    labs(x = "Expectiva de Vida (Anos)", y = "PIB per capita ") +
-    geom_count(alpha = .5)
+    labs(title = "PIB per capito dada a Expectativa de Vida em Anos",x = "Expectiva de Vida (Anos)", y = "PIB per capita ") +
+    geom_point(alpha = .5, size = 3)
+vida_pib
+```
 
+### IDH dado a Expectativa de Vida
+```{r}
 vida_idh = dados_analisados %>% 
     ggplot(aes(x = expectativa_vida, y = idh )) +
-    labs(x = "Expectiva de Vida (Anos)", y = "IDH") +
-    geom_count(alpha = .5)
-
-grid.arrange(vida_pib, vida_idh, ncol=2)
+    labs(title = "IDH dada a Expectativa de Vida em Anos", x = "Expectiva de Vida (Anos)", y = "IDH") +
+    geom_point(alpha = .5, size = 3)
+vida_idh
 ```
 
 ## Geração de Modelos
@@ -215,6 +234,7 @@ modelo_pib <- lm(pib_per_capita ~ rank_liberdade + liberdade_empreender +liberda
 tidy(modelo_pib,
      conf.int = TRUE,
      conf.level = 0.95)
+glance(modelo_pib)
 ```
 
 ```{r}
@@ -223,4 +243,20 @@ modelo_idh <- lm(idh ~ rank_liberdade + liberdade_empreender +liberdade_trabalho
 tidy(modelo_idh,
      conf.int = TRUE,
      conf.level = 0.95)
+
+```
+
+### Análise Descritiva dos Países Classificados como África Sub Sariana
+```{r}
+africa_ss = dados_analisados %>% 
+  filter(regiao == "Sub-Saharan Africa")
+
+africa_ss %>% 
+  add_predictions(modelo_pib) %>% 
+  add_residuals(modelo_pib)
+
+africa_ss %>% 
+  add_predictions(modelo_idh) %>% 
+  add_residuals(modelo_idh)
+
 ```
