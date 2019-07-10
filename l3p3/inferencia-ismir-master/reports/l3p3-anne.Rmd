@@ -30,7 +30,7 @@ glimpse(dados)
 
 ### Comparação dos mecanismos: Baseline vs. Up/Down Voting
 ```{r}
-comparacao_baseline_updownvoting = dados %>% 
+baseline_updownvoting = dados %>% 
     filter(scenario %in% c("baseline", "up/downvoting"))
 
 theta <- function(d, i) {
@@ -43,23 +43,28 @@ theta <- function(d, i) {
     l - b
 }
 
-theta(comparacao_baseline_updownvoting, i = 1:NROW(comparacao_baseline_updownvoting))
+theta(baseline_updownvoting, i = 1:NROW(baseline_updownvoting))
 ```
 
 ```{r}
-comparacao1 = boot(data = comparacao_baseline_updownvoting,
+comparacao_baseline_updownvoting = boot(data = baseline_updownvoting,
            statistic = theta,
            R = 2000) %>%
     tidy(conf.level = .95,
          conf.method = "bca",
          conf.int = TRUE)
 
-comparacao1
+comparacao_baseline_updownvoting
 ```
-### Comparação dos mecanismos: Baseline vs. Combined
 
+### Análise: Baseline vs.UP/Down Voting
+O IC obtido é igual a [1,96 ; 2,59], onde, 95% das reamostragens o valor real do parâmetro (2,26) está contido no intervalo de confiança.
+
+Logo, o mecanismo UP/Down Voting apresenta satisfação maior do que o Baseline, em média de 2,26 pontos de diferença. 
+
+### Comparação dos mecanismos: Baseline vs. Combined
 ```{r}
-comparacao_baseline_combined = dados %>% 
+baseline_combined = dados %>% 
     filter(scenario %in% c("baseline", "combined"))
 
 theta <- function(d, i) {
@@ -72,16 +77,21 @@ theta <- function(d, i) {
     l - b
 }
 
-theta(comparacao_baseline_combined, i = 1:NROW(comparacao_baseline_combined))
+theta(baseline_combined, i = 1:NROW(baseline_combined))
 ```
 
 ```{r}
-comparacao2 = boot(data = comparacao_baseline_combined,
+comparacao_baseline_combined = boot(data = baseline_combined,
            statistic = theta,
            R = 2000) %>%
     tidy(conf.level = .95,
          conf.method = "bca",
          conf.int = TRUE)
 
-comparacao2
+comparacao_baseline_combined
 ```
+
+### Análise: Baseline vs. Combined
+
+O IC obtido é igual a [1,56 ; 2,25], onde, 95% das reamostragens o valor real do parâmetro (1,91) está contido no intervalo de confiança.
+Assim, o mecanismo Combined apresenta uma média de 1,91 pontos de diferença a mais do que o Baseline, sendo o melhor mecanismo dentre os dois.

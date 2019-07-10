@@ -24,82 +24,89 @@ dados = read_csv2(here::here("data/campeonato-brasileiro-full.csv"))
 
 ## Pergunta 2: Jogos onde há um vitorioso têm mais ou menos gols que empates? 
 
+```{r}
+set.seed(1305)
+```
 ### Usando ICs
 
 #### PERGUNTA 1
 ```{r}
-media_gols = function(d, dia) {
-  g = d %>%
-    filter(Dia == dia) %>%
-    summarise(media = mean(gols)) %>% 
-    pull(media)
-}
-theta_dom_qua = function(d, i) {
-  aux = d %>% slice(i)
-  gols_domingo = media_gols(aux, "Domingo")
-  gols_quarta = media_gols(aux, "Quarta-feira")
-  diferenca = gols_domingo - gols_quarta
-  return(diferenca)
-}
+dom_qua = dados %>% 
+    filter(Dia %in% c("Domingo", "Quarta-feira"))
 
-boot_dom_qua = dados %>% boot(statistic = theta_dom_qua, R = 4000) %>% 
+theta_dom_qua <- function(d, i) {
+    agrupado = d %>% 
+        slice(i) %>% 
+        group_by(Dia) %>% 
+        summarise(media = mean(gols))
+    d = agrupado %>% filter(Dia == "Domingo") %>% pull(media)
+    q = agrupado %>% filter(Dia == "Quarta-feira") %>% pull(media)
+    d - q
+    }
+    
+boot_dom_qua = dom_qua %>% boot(statistic = theta_dom_qua, R = 4000) %>% 
   tidy(conf.level = .95,
        conf.int = TRUE)
-```
 
-
-```{r}
 boot_dom_qua
 ```
+### Análise: Pergunta 1 (IC)
+
+O IC obtido é igual a [-0,45 ; 0,41], onde, 95% das reamostragens o valor real do parâmetro (-0,01) está contido no intervalo de confiança.
+
+Contudo, dado que o IC é obtido pela a	diferença	entre	as médias, e contém o valor zero, conclui-se que existe diferença muito baixa entre as médias de gols no Domingo e na Quarta-Feira. Logo, o dia não é um fator deterministico forte para o número de gols de uma partida.
 
 #### PERGUNTA 2
 ```{r}
-set.seed(145)
 theta_gols_empate = function(d, i){
   aux = d %>% slice(i)
   
-  gols_empate = aux %>% 
-    filter(Vencedor == "-") %>% 
-    summarise(n = mean(gols)) %>% 
-    pull()
-  
-  gols_vencedor =  aux %>% 
-    filter(Vencedor != "-") %>% 
-    summarise(n = mean(gols)) %>% 
-    pull()
-  
-  diferenca = gols_vencedor - gols_empate
-  
-  return(diferenca)
+  empate = aux %>% filter(Vencedor == "-") %>% summarise(n = mean(gols)) %>% pull()
+  vencedor =  aux %>% filter(Vencedor != "-") %>% summarise(n = mean(gols)) %>% pull()
+  vencedor - empate
   
 }
 boot_gols_empate = dados %>% boot(statistic = theta_gols_empate, R = 4000) %>% 
   tidy(conf.level = .95,
        conf.int = TRUE)
-```
 
-```{r}
 boot_gols_empate
 ```
+### Análise: Pergunta 2 (IC)
+
+O IC obtido é igual a [0,21 ; 0,90], onde, 95% das reamostragens o valor real do parâmetro (0,56) está contido no intervalo de confiança.
+
+Pode-se concluir que existe pouca diferença, sendo de aproximadente de nenhum ou de um gol a mais na média gols de partidas que possuem um vencedor.
+
 ### Usando testes de hipótese 
 
 #### PERGUNTA 1:
 ```{r}
 gols_domingo = dados %>% 
-  filter(Dia == "Domingo") %>% 
-  pull(gols)
+  filter(Dia == "Domingo") %>% pull(gols)
+
 gols_quarta = dados %>% 
-  filter(Dia == "Quarta-feira") %>% 
-  pull(gols)
+  filter(Dia == "Quarta-feira") %>% pull(gols)
+
 permTS(gols_domingo, gols_quarta)
 ```
+
+### Análise: Pergunta 1 (TH)
+
+Hipótese: Media(domingo) - Media(quarta) != 0 
+
+Pode-se concluir que existe pouca diferença, sendo de aproximadente de nenhum ou de um gol a mais na média gols de partidas que possuem um vencedor.
+
 #### PERGUNTA 2:
 ```{r}
 gols_vencedor = dados %>% 
-  filter(Vencedor == "-") %>% 
-  pull(gols)
+  filter(Vencedor == "-") %>% pull(gols)
+
 gols_empate = dados %>% 
-  filter(Vencedor != "-") %>% 
-  pull(gols)
+  filter(Vencedor != "-") %>% pull(gols)
+
 permTS(gols_vencedor, gols_empate)
 ```
+### Análise: Pergunta 2 (TH)
+
+Hipótese: Media(vencedor) - Media(empate) != 0
