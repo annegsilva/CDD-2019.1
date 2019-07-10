@@ -1,0 +1,6 @@
+"0","library(tidyverse)"
+"0","library(boot)"
+"0","library(perm)"
+"0","library(broom)"
+"0","theme_set(theme_bw())"
+"0","knitr::opts_chunk$set(echo = TRUE)"

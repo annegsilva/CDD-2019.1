@@ -1,0 +1,1 @@
+"0","dados = read_csv2(here::here(""data/campeonato-brasileiro-full.csv""))"
