@@ -386,75 +386,75 @@ $(document).ready(function () {
 </div>
 <div id="pergunta-2-jogos-onde-ha-um-vitorioso-tem-mais-ou-menos-gols-que-empates" class="section level2">
 <h2>Pergunta 2: Jogos onde há um vitorioso têm mais ou menos gols que empates?</h2>
+<pre class="r"><code>set.seed(1305)</code></pre>
 <div id="usando-ics" class="section level3">
 <h3>Usando ICs</h3>
 <div id="pergunta-1" class="section level4">
 <h4>PERGUNTA 1</h4>
-<pre class="r"><code>media_gols = function(d, dia) {
-  g = d %&gt;%
-    filter(Dia == dia) %&gt;%
-    summarise(media = mean(gols)) %&gt;% 
-    pull(media)
-}
-theta_dom_qua = function(d, i) {
-  aux = d %&gt;% slice(i)
-  gols_domingo = media_gols(aux, &quot;Domingo&quot;)
-  gols_quarta = media_gols(aux, &quot;Quarta-feira&quot;)
-  diferenca = gols_domingo - gols_quarta
-  return(diferenca)
-}
+<pre class="r"><code>dom_qua = dados %&gt;% 
+    filter(Dia %in% c(&quot;Domingo&quot;, &quot;Quarta-feira&quot;))
 
-boot_dom_qua = dados %&gt;% boot(statistic = theta_dom_qua, R = 4000) %&gt;% 
+theta_dom_qua &lt;- function(d, i) {
+    agrupado = d %&gt;% 
+        slice(i) %&gt;% 
+        group_by(Dia) %&gt;% 
+        summarise(media = mean(gols))
+    d = agrupado %&gt;% filter(Dia == &quot;Domingo&quot;) %&gt;% pull(media)
+    q = agrupado %&gt;% filter(Dia == &quot;Quarta-feira&quot;) %&gt;% pull(media)
+    d - q
+    }
+    
+boot_dom_qua = dom_qua %&gt;% boot(statistic = theta_dom_qua, R = 4000) %&gt;% 
   tidy(conf.level = .95,
-       conf.int = TRUE)</code></pre>
-<pre class="r"><code>boot_dom_qua</code></pre>
+       conf.int = TRUE)
+
+boot_dom_qua</code></pre>
 <pre><code>## # A tibble: 1 x 5
 ##   statistic     bias std.error conf.low conf.high
 ##       &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
-## 1   -0.0148 0.000434     0.220   -0.443     0.424</code></pre>
+## 1   -0.0148 -0.00246     0.219   -0.453     0.408</code></pre>
 </div>
+</div>
+<div id="analise-pergunta-1-ic" class="section level3">
+<h3>Análise: Pergunta 1 (IC)</h3>
+<p>O IC obtido é igual a [-0,45 ; 0,41], onde, 95% das reamostragens o valor real do parâmetro (-0,01) está contido no intervalo de confiança.</p>
+<p>Contudo, dado que o IC é obtido pela a diferença entre as médias, e contém o valor zero, conclui-se que existe diferença muito baixa entre as médias de gols no Domingo e na Quarta-Feira. Logo, o dia da semana não é um fator deterministico forte para o número de gols de uma partida.</p>
 <div id="pergunta-2" class="section level4">
 <h4>PERGUNTA 2</h4>
-<pre class="r"><code>set.seed(145)
-theta_gols_empate = function(d, i){
+<pre class="r"><code>theta_gols_empate = function(d, i){
   aux = d %&gt;% slice(i)
   
-  gols_empate = aux %&gt;% 
-    filter(Vencedor == &quot;-&quot;) %&gt;% 
-    summarise(n = mean(gols)) %&gt;% 
-    pull()
-  
-  gols_vencedor =  aux %&gt;% 
-    filter(Vencedor != &quot;-&quot;) %&gt;% 
-    summarise(n = mean(gols)) %&gt;% 
-    pull()
-  
-  diferenca = gols_vencedor - gols_empate
-  
-  return(diferenca)
+  empate = aux %&gt;% filter(Vencedor == &quot;-&quot;) %&gt;% summarise(n = mean(gols)) %&gt;% pull()
+  vencedor =  aux %&gt;% filter(Vencedor != &quot;-&quot;) %&gt;% summarise(n = mean(gols)) %&gt;% pull()
+  vencedor - empate
   
 }
 boot_gols_empate = dados %&gt;% boot(statistic = theta_gols_empate, R = 4000) %&gt;% 
   tidy(conf.level = .95,
-       conf.int = TRUE)</code></pre>
-<pre class="r"><code>boot_gols_empate</code></pre>
+       conf.int = TRUE)
+
+boot_gols_empate</code></pre>
 <pre><code>## # A tibble: 1 x 5
-##   statistic     bias std.error conf.low conf.high
-##       &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
-## 1     0.562 -0.00106     0.175    0.207     0.910</code></pre>
-</div>
-<div id="usando-testes-de-hipotese" class="section level4">
-<h4>Usando testes de hipótese</h4>
+##   statistic    bias std.error conf.low conf.high
+##       &lt;dbl&gt;   &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+## 1     0.562 0.00174     0.174    0.218     0.903</code></pre>
 </div>
 </div>
-<div id="pergunta-1-1" class="section level3">
-<h3>PERGUNTA 1:</h3>
+<div id="analise-pergunta-2-ic" class="section level3">
+<h3>Análise: Pergunta 2 (IC)</h3>
+<p>O IC obtido é igual a [0,21 ; 0,90], onde, 95% das reamostragens o valor real do parâmetro (0,56) está contido no intervalo de confiança.</p>
+<p>Pode-se concluir que existe pouca diferença, sendo de aproximadente de nenhum ou de um gol (dado que não é possível representar 0,5 gol) a mais na média gols de partidas que possuem um vencedor.</p>
+</div>
+<div id="usando-testes-de-hipotese" class="section level3">
+<h3>Usando testes de hipótese</h3>
+<div id="pergunta-1-1" class="section level4">
+<h4>PERGUNTA 1:</h4>
 <pre class="r"><code>gols_domingo = dados %&gt;% 
-  filter(Dia == &quot;Domingo&quot;) %&gt;% 
-  pull(gols)
+  filter(Dia == &quot;Domingo&quot;) %&gt;% pull(gols)
+
 gols_quarta = dados %&gt;% 
-  filter(Dia == &quot;Quarta-feira&quot;) %&gt;% 
-  pull(gols)
+  filter(Dia == &quot;Quarta-feira&quot;) %&gt;% pull(gols)
+
 permTS(gols_domingo, gols_quarta)</code></pre>
 <pre><code>## 
 ##  Permutation Test using Asymptotic Approximation
@@ -466,14 +466,19 @@ permTS(gols_domingo, gols_quarta)</code></pre>
 ## mean GROUP 1 - mean GROUP 2 
 ##                 -0.01482372</code></pre>
 </div>
-<div id="pergunta-2-1" class="section level3">
-<h3>PERGUNTA 2:</h3>
+</div>
+<div id="analise-pergunta-1-th" class="section level3">
+<h3>Análise: Pergunta 1 (TH)</h3>
+<p>Hipótese alternativa (Ha) : Media(domingo) - Media(quarta) != 0 Hipóte nula (H0): Media(domingo) - Media(quarta) = 0</p>
+<p>Dado que foi obtido um p-valor de 0,9%, há evidencias sobre a hipótese nula (complementar à Ha) é portanto, pode-se concluir que <em>não há diferença</em> na média gols de partidas que possuem um vencedor.</p>
+<div id="pergunta-2-1" class="section level4">
+<h4>PERGUNTA 2:</h4>
 <pre class="r"><code>gols_vencedor = dados %&gt;% 
-  filter(Vencedor == &quot;-&quot;) %&gt;% 
-  pull(gols)
+  filter(Vencedor == &quot;-&quot;) %&gt;% pull(gols)
+
 gols_empate = dados %&gt;% 
-  filter(Vencedor != &quot;-&quot;) %&gt;% 
-  pull(gols)
+  filter(Vencedor != &quot;-&quot;) %&gt;% pull(gols)
+
 permTS(gols_vencedor, gols_empate)</code></pre>
 <pre><code>## 
 ##  Permutation Test using Asymptotic Approximation
@@ -485,6 +490,21 @@ permTS(gols_vencedor, gols_empate)</code></pre>
 ## mean GROUP 1 - mean GROUP 2 
 ##                    -0.56181</code></pre>
 </div>
+</div>
+<div id="analise-pergunta-2-th" class="section level3">
+<h3>Análise: Pergunta 2 (TH)</h3>
+<p>Hipótese alternativa (Ha): Media(vencedor) - Media(empate) != 0 Hipótese nula (H0): Media(vencedor) - Media(empate) = 0</p>
+<p>Dado que têm-se 0,002% (p-valor), rejeita-se a hipótese nula e considera-se Ha como verdadeira. Logo, conclui-se que há evidências que jogos com um time vitorioso possuem saldo de gols diferente daqueles com empate.</p>
+</div>
+</div>
+<div id="conclusao" class="section level2">
+<h2>Conclusão</h2>
+<ul>
+<li><p>Pergunta 1: Os resultados foram similares, contudo, o IC mostrou-se mais flexivel sobre a interpretação.</p></li>
+<li><p>Pergunta 2: IC e TH chegaram ao mesmo resultado, mas por meio do IC é possível obter uma etiativa da diferença no saldo de gols.</p></li>
+</ul>
+<p>Sabendo que o <em>teste hipótese</em> é um procedimento de <em>decisão binarário</em>, este é consequentemente menos expressivo devido a necessidade de restrição da análise como válida ou não de acordo com um limiar (p-valor).</p>
+<p>Ao contrário dos <em>intervalos de confiança</em>, o investigador é capaz de adicionar interpretação do contexto sobre os valores obtidos, obtendo uma maior expressividade.</p>
 </div>
 
 

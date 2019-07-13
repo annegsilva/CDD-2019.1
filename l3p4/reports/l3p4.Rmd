@@ -54,7 +54,7 @@ boot_dom_qua
 
 O IC obtido é igual a [-0,45 ; 0,41], onde, 95% das reamostragens o valor real do parâmetro (-0,01) está contido no intervalo de confiança.
 
-Contudo, dado que o IC é obtido pela a	diferença	entre	as médias, e contém o valor zero, conclui-se que existe diferença muito baixa entre as médias de gols no Domingo e na Quarta-Feira. Logo, o dia não é um fator deterministico forte para o número de gols de uma partida.
+Contudo, dado que o IC é obtido pela a	diferença	entre	as médias, e contém o valor zero, conclui-se que existe diferença muito baixa entre as médias de gols no Domingo e na Quarta-Feira. Logo, o dia da semana não é um fator deterministico forte para o número de gols de uma partida.
 
 #### PERGUNTA 2
 ```{r}
@@ -76,7 +76,7 @@ boot_gols_empate
 
 O IC obtido é igual a [0,21 ; 0,90], onde, 95% das reamostragens o valor real do parâmetro (0,56) está contido no intervalo de confiança.
 
-Pode-se concluir que existe pouca diferença, sendo de aproximadente de nenhum ou de um gol a mais na média gols de partidas que possuem um vencedor.
+Pode-se concluir que existe pouca diferença, sendo de aproximadente de nenhum ou de um gol (dado que não é possível representar 0,5 gol) a mais na média gols de partidas que possuem um vencedor.
 
 ### Usando testes de hipótese 
 
@@ -93,9 +93,10 @@ permTS(gols_domingo, gols_quarta)
 
 ### Análise: Pergunta 1 (TH)
 
-Hipótese: Media(domingo) - Media(quarta) != 0 
+Hipótese alternativa (Ha) : Media(domingo) - Media(quarta) != 0 
+Hipóte nula (H0): Media(domingo) - Media(quarta) = 0
 
-Pode-se concluir que existe pouca diferença, sendo de aproximadente de nenhum ou de um gol a mais na média gols de partidas que possuem um vencedor.
+Dado que foi obtido um p-valor de 0,9%, há evidencias sobre a hipótese nula (complementar à Ha) é portanto, pode-se concluir que *não há diferença* na média gols de partidas que possuem um vencedor.
 
 #### PERGUNTA 2:
 ```{r}
@@ -109,4 +110,19 @@ permTS(gols_vencedor, gols_empate)
 ```
 ### Análise: Pergunta 2 (TH)
 
-Hipótese: Media(vencedor) - Media(empate) != 0
+Hipótese alternativa (Ha): Media(vencedor) - Media(empate) != 0
+Hipótese nula (H0): Media(vencedor) - Media(empate) = 0
+
+Dado que têm-se 0,002% (p-valor), rejeita-se a hipótese nula e considera-se Ha como verdadeira.
+Logo,  conclui-se que há evidências que jogos com um time vitorioso possuem saldo de gols diferente  daqueles com empate.
+
+## Conclusão
+
+- Pergunta 1:
+Os resultados foram similares, contudo, o IC mostrou-se mais flexivel sobre a interpretação.
+
+- Pergunta 2: IC e TH chegaram ao mesmo resultado, mas por meio do IC é possível obter uma etiativa da diferença no saldo de gols.
+
+Sabendo que o *teste hipótese* é um procedimento de *decisão binarário*, este é consequentemente menos expressivo devido a necessidade de restrição da análise como válida ou não de acordo com um limiar (p-valor).
+
+Ao contrário dos *intervalos de confiança*, o investigador é capaz de adicionar interpretação do contexto sobre os valores obtidos, obtendo uma maior expressividade.

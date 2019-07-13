@@ -1,3 +1,0 @@
-"0","dados = read_csv2(here::here(""data/campeonato-brasileiro-full.csv""))"
-"2","Error: 'C:/Users/anneg/Desktop/CDD-2019.1/l3p4/data/campeonato-brasileiro-full.csv' does not exist.
-"
